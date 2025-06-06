@@ -1,60 +1,64 @@
-# app.py
-
-from flask import Flask, jsonify, render_template
+import os
+import json
+# A função correta, 'send_from_directory', é importada aqui
+from flask import Flask, send_from_directory, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-import pandas as pd
-import logging
+import traceback
 
-logging.basicConfig(level=logging.INFO)
-app = Flask(__name__)
+# O Flask é instruído a procurar arquivos estáticos na pasta 'static'
+app = Flask(__name__, static_folder='static')
 
-# --- CONFIGURAÇÕES ---
-SERVICE_ACCOUNT_FILE = 'credentials.json'
-SPREADSHEET_ID = '1WNi5B8ujhPTcGZgS5j7oMnnF4G_MxEEhO9ANhywLcpM'  # <-- SUBSTITUA PELO SEU ID REAL
-# Lendo da coluna A até a F, que corresponde às 6 colunas da sua imagem
-RANGE_NAME = 'BaseDeDados!A:F'  # <-- AJUSTE O NOME DA ABA SE NECESSÁRIO
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-# --------------------
-
-@app.route('/')
-def dashboard():
-    """Renderiza a página principal do dashboard."""
-    return render_template('index.html')
-
+# --- Rota da API ---
 @app.route('/api/data')
 def get_data():
-    """Busca, processa e serve os dados da planilha."""
-    logging.info("Recebida requisição para /api/data")
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    SERVICE_ACCOUNT_FILE = 'credentials.json'
+    creds = None
+
     try:
-        creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+        if creds_json_str:
+            creds_info = json.loads(creds_json_str)
+            creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+        else:
+            creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
+
+        SPREADSHEET_ID = '1WNi5B8ujhPTcGZgS5j7oMnnF4G_MxEEhO9ANhywLcpM'
+        RANGE_NAME = 'BaseDeDados!A:F'
+
         result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME).execute()
         values = result.get('values', [])
 
         if not values or len(values) < 2:
-            return jsonify({"error": "Nenhum dado encontrado na planilha."}), 404
+            return jsonify({"error": "Nenhum dado ou apenas cabeçalho encontrado na planilha."}), 404
+        else:
+            headers = values[0]
+            json_data = [dict(zip(headers, row)) for row in values[1:]]
+            for item in json_data:
+                if 'Quantidade de Corretores' in item:
+                    try:
+                        item['Quantidade de Corretores'] = int(item['Quantidade de Corretores'])
+                    except (ValueError, TypeError):
+                        item['Quantidade de Corretores'] = 0
+            return jsonify(json_data)
 
-        header = values[0]
-        data_rows = values[1:]
-        
-        df = pd.DataFrame(data_rows, columns=header)
-        df.columns = df.columns.str.strip()
-
-        required_cols = ['Imobiliária', 'Quantidade de Corretores', 'Estado', 'Cidade', 'Ativa em sistema', 'Contrato assinado']
-        if not all(col in df.columns for col in required_cols):
-            return jsonify({"error": "Colunas necessárias não encontradas na planilha."}), 500
-            
-        df['Quantidade de Corretores'] = pd.to_numeric(df['Quantidade de Corretores'], errors='coerce').fillna(0)
-        df['Quantidade de Corretores'] = df['Quantidade de Corretores'].astype(int)
-
-        logging.info(f"Processados {len(df)} registros.")
-        return jsonify(df.to_dict('records'))
-
+    except FileNotFoundError:
+        return jsonify({"error": "Arquivo 'credentials.json' não encontrado."}), 500
     except Exception as e:
-        logging.error(f"Erro inesperado: {e}", exc_info=True)
-        return jsonify({"error": "Erro interno no servidor.", "details": str(e)}), 500
+        traceback.print_exc()
+        return jsonify({"error": f"Erro interno do servidor: {e}"}), 500
+
+# --- Rota para servir o Frontend (CORRIGIDA) ---
+# Substituímos a função 'dashboard' pela 'serve_dashboard' que usa a função correta
+@app.route('/')
+def serve_dashboard():
+    # send_from_directory é a função ideal para servir arquivos estáticos.
+    return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, port=port)

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Dinâmico de Imobiliárias</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #673ab7; --primary-light-color: #ede7f6; --accent-color: #009688;
+            --danger-color: #f44336; --success-color: #4caf50; --bg-color: #f5f7fa;
+            --surface-color: #ffffff; --text-primary-color: #212121; --text-secondary-color: #757575;
+            --border-color: #e0e0e0; --shadow: 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.05);
+            --shadow-hover: 0 4px 10px rgba(0,0,0,0.08), 0 8px 16px rgba(0,0,0,0.08); --border-radius: 16px;
+        }
+        [data-theme='dark'] {
+            --bg-color: #121212; --surface-color: #1e1e1e; --text-primary-color: #e0e0e0;
+            --text-secondary-color: #bdbdbd; --border-color: #424242; --primary-light-color: #2a233b;
+            --shadow: 0 2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.2);
+            --shadow-hover: 0 4px 10px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.3);
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary-color); margin: 0; line-height: 1.6; transition: background-color 0.3s, color 0.3s; }
+        .container { max-width: 1800px; margin: 30px auto; padding: 0 30px; }
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+        .header-title { display: flex; align-items: center; }
+        .header-title .material-symbols-outlined { font-size: 2.8em; color: var(--primary-color); margin-right: 15px; }
+        .header-title h1 { font-weight: 500; font-size: 2.2em; margin: 0; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
+        .theme-switch { display: inline-block; height: 34px; position: relative; width: 60px; }
+        .theme-switch input { display: none; }
+        .slider { background-color: #ccc; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; }
+        .slider:before { background-color: #fff; bottom: 4px; content: ""; height: 26px; left: 4px; position: absolute; transition: .4s; width: 26px; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .slider.round { border-radius: 34px; }
+        .slider.round:before { border-radius: 50%; }
+        .card { background-color: var(--surface-color); padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); transition: all 0.3s ease-in-out; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+        .card h2 { margin: 0 0 25px 0; text-align: left; font-size: 1.2em; font-weight: 500; display: flex; align-items: center; }
+        .card h2 .material-symbols-outlined { margin-right: 10px; color: var(--primary-color); }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 30px; }
+        .kpi-card { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; padding: 20px; }
+        .kpi-card .icon { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%; margin-right: 20px; }
+        .kpi-card .icon .material-symbols-outlined { font-size: 28px; }
+        .kpi-card .text-content .title { font-size: 0.95em; color: var(--text-secondary-color); font-weight: 400; margin-bottom: 4px; }
+        .kpi-card .text-content .value { font-size: 1.8em; font-weight: 700; line-height: 1.2; }
+        .filters-card { margin-bottom: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { margin-bottom: 8px; font-size: 0.9em; font-weight: 500; color: var(--text-secondary-color); display: flex; align-items: center; }
+        .filter-group label .material-symbols-outlined { font-size: 1.2em; margin-right: 8px; }
+        .filters-card select { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1em; background-color: var(--surface-color); color: var(--text-primary-color); width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; }
+        .filters-card button { padding: 12px; background-color: var(--primary-light-color); color: var(--primary-color); cursor: pointer; border: none; font-weight: 700; border-radius: 8px; transition: background-color 0.2s ease; }
+        .filters-card button:hover { background-color: #dcd1f3; }
+        [data-theme='dark'] .filters-card button:hover { background-color: #3b3252; }
+        .filters-card button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #active-filters-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; min-height: 38px;}
+        .filter-chip { display: flex; align-items: center; background-color: var(--primary-light-color); color: var(--primary-color); padding: 5px 10px; border-radius: 20px; font-size: 0.9em; font-weight: 500; }
+        .filter-chip .remove-chip { margin-left: 8px; cursor: pointer; background: none; border: none; font-size: 1.2em; color: var(--primary-color); padding: 0; display: flex; align-items: center; }
+        .bottom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
+        .chart-container, .table-container { position: relative; height: 400px; flex-grow: 1; }
+        .dataTables_wrapper { font-size: 0.95em; color: var(--text-secondary-color); }
+        .dt-buttons .dt-button { background-color: var(--primary-color) !important; color: white !important; border: none !important; border-radius: 8px !important; padding: 8px 16px !important; margin-bottom: 10px; }
+        .dt-buttons .dt-button:hover { background-color: #512da8 !important; }
+        .dataTables_filter input, .dataTables_length select { border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-left: 5px; background-color: var(--surface-color); color: var(--text-primary-color); }
+        .dataTables_paginate .paginate_button { border-radius: 50% !important; margin: 0 5px !important; border: none !important; }
+        .dataTables_paginate .paginate_button.current, .dataTables_paginate .paginate_button:hover { background: var(--primary-color) !important; color: white !important; }
+        .dataTables_paginate .paginate_button.disabled { opacity: 0.4; }
+        .animate-on-scroll { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+        .animate-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+        #map-container { min-height: 450px; }
+        @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(103, 58, 183, 0.5); } 100% { box-shadow: 0 0 0 15px rgba(103, 58, 183, 0); } }
+        .flash-highlight { animation: flash 1s ease-out; }
+        @media (max-width: 1400px) { .bottom-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 992px) { .bottom-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .filters-card, .kpi-grid { grid-template-columns: 1fr; } header { flex-direction: column; text-align: center; gap: 20px;} .header-title h1 { font-size: 1.8em; } }
+    </style>
+</head>
+<body>
+    <div id="skeleton-loader" class="container">
+        <div class="kpi-grid">
+            <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
+            <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
+        </div>
+        <div class="bottom-grid">
+            <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
+        </div>
+        <div class="card skeleton" style="margin-top:25px; height: 300px;"></div>
+    </div>
+
+    <div id="dashboard-content" class="container" style="display: none;">
+        <header>
+            <div class="header-title">
+                <span class="material-symbols-outlined">analytics</span><h1>Relatório Dinâmico</h1>
+            </div>
+            <div class="theme-switch-wrapper">
+                <span class="material-symbols-outlined">light_mode</span>
+                <label class="theme-switch" for="theme-toggle">
+                    <input type="checkbox" id="theme-toggle" />
+                    <span class="slider round"></span>
+                </label>
+                <span class="material-symbols-outlined">dark_mode</span>
+            </div>
+        </header>
+
+        <div class="card filters-card animate-on-scroll">
+            <div class="filter-group"><label for="filter-state"><span class="material-symbols-outlined">map</span>Estado:</label><select id="filter-state"><option value="">Todos</option></select></div>
+            <div class="filter-group"><label for="filter-city"><span class="material-symbols-outlined">location_city</span>Cidade:</label><select id="filter-city"><option value="">Todas</option></select></div>
+            <div class="filter-group"><label for="filter-status-sistema"><span class="material-symbols-outlined">toggle_on</span>Status Sistema:</label><select id="filter-status-sistema"><option value="">Todos</option></select></div>
+            <div class="filter-group"><label for="filter-contrato"><span class="material-symbols-outlined">history_edu</span>Status Contrato:</label><select id="filter-contrato"><option value="">Todos</option></select></div>
+            <div class="filter-group"><button id="reset-filters" disabled>Limpar Filtros</button></div>
+        </div>
+
+        <div id="active-filters-container"></div>
+        
+        <div class="kpi-grid animate-on-scroll">
+            <div class="card kpi-card"><div class="icon" style="background-color: #e8f5e9;"><span class="material-symbols-outlined" style="color: #4caf50;">apartment</span></div><div class="text-content"><div class="title">Imobiliárias Ativas</div><p class="value" id="kpi-imob-ativas" style="color:var(--success-color)">0</p></div></div>
+            <div class="card kpi-card"><div class="icon" style="background-color: #fff3e0;"><span class="material-symbols-outlined" style="color: #ff9800;">emoji_people</span></div><div class="text-content"><div class="title">Total de Corretores</div><p class="value" id="kpi-total-corretores" style="color:var(--text-primary-color)">0</p></div></div>
+            <div class="card kpi-card"><div class="icon" style="background-color: #e3f2fd;"><span class="material-symbols-outlined" style="color: #2196f3;">domain</span></div><div class="text-content"><div class="title">Total de Imobiliárias</div><p class="value" id="kpi-total-imobiliarias" style="color:var(--text-primary-color)">0</p></div></div>
+            <div class="card kpi-card"><div class="icon" style="background-color: #fce4ec;"><span class="material-symbols-outlined" style="color: #e91e63;">cancel</span></div><div class="text-content"><div class="title">Imobiliárias Inativas</div><p class="value" id="kpi-imob-inativas" style="color:var(--danger-color)">0</p></div></div>
+            <div class="card kpi-card"><div class="icon" style="background-color: #ede7f6;"><span class="material-symbols-outlined" style="color: #673ab7;">assignment_turned_in</span></div><div class="text-content"><div class="title">Contratos Assinados</div><p class="value" id="kpi-contratos-assinados" style="color:var(--accent-color)">0</p></div></div>
+            <div class="card kpi-card"><div class="icon" style="background-color: #ffebee;"><span class="material-symbols-outlined" style="color: #f44336;">pending_actions</span></div><div class="text-content"><div class="title">Contratos Pendentes</div><p class="value" id="kpi-contratos-pendentes" style="color:var(--danger-color)">0</p></div></div>
+        </div>
+        
+        <div class="bottom-grid">
+            <div class="card animate-on-scroll"><h2><span class="material-symbols-outlined">workspace_premium</span>Ranking de Imobiliárias</h2><div class="table-container"><table id="rankingTable" class="display" style="width:100%"></table></div></div>
+            <div class="card animate-on-scroll"><h2><span class="material-symbols-outlined">public</span>Imobiliárias por Estado</h2><div id="map-container" class="chart-container"></div></div>
+            <div class="card animate-on-scroll"><h2><span class="material-symbols-outlined">leaderboard</span>Imobiliárias por Cidade</h2><div class="chart-container"><canvas id="cityBarChart"></canvas></div></div>
+        </div>
+
+        <div class="card animate-on-scroll" style="margin-top: 25px;">
+            <h2><span class="material-symbols-outlined">table</span>Dados Completos</h2>
+            <div id="table-card"><table id="imobiliariasTable" class="display nowrap" style="width:100%"></table></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.highcharts.com/maps/highmaps.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/mapdata/countries/br/br-all.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+    <script>
+    // =================================================================================
+    // SCRIPT COMPLETO E CORRIGIDO
+    // =================================================================================
+
+    // --- 1. CONFIG & STATE ---
+    let allData = [];
+    const instances = {
+        mainTable: null, rankingTable: null,
+        cityBarChart: null, brazilMap: null
+    };
+    const stateNameToHcKey = {
+        'Acre': 'br-ac', 'Alagoas': 'br-al', 'Amapá': 'br-ap', 'Amazonas': 'br-am',
+        'Bahia': 'br-ba', 'Ceará': 'br-ce', 'Distrito Federal': 'br-df', 'Espírito Santo': 'br-es',
+        'Goiás': 'br-go', 'Maranhão': 'br-ma', 'Mato Grosso': 'br-mt', 'Mato Grosso do Sul': 'br-ms',
+        'Minas Gerais': 'br-mg', 'Pará': 'br-pa', 'Paraíba': 'br-pb', 'Paraná': 'br-pr',
+        'Pernambuco': 'br-pe', 'Piauí': 'br-pi', 'Rio de Janeiro': 'br-rj', 'Rio Grande do Norte': 'br-rn',
+        'Rio Grande do Sul': 'br-rs', 'Rondônia': 'br-ro', 'Roraima': 'br-rr', 'Santa Catarina': 'br-sc',
+        'São Paulo': 'br-sp', 'Sergipe': 'br-se', 'Tocantins': 'br-to'
+    };
+
+
+    // --- 2. UTILITY & HELPER FUNCTIONS ---
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString('pt-BR');
+            if (progress < 1) { window.requestAnimationFrame(step); }
+        };
+        window.requestAnimationFrame(step);
+    }
+    
+    function getThemeAwareColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            gridColor: isDark ? '#424242' : '#e0e0e0', textColor: isDark ? '#bdbdbd' : '#757575',
+            mapMinColor: isDark ? '#3a2d5c' : '#f0ebf9', mapMaxColor: isDark ? '#9e7de0' : '#673ab7'
+        };
+    }
+    
+    function groupAndSortData(data, key, sliceCount = 10) {
+        const countBy = data.reduce((acc, item) => {
+            if (item && item[key]) { acc[item[key]] = (acc[item[key]] || 0) + 1; }
+            return acc;
+        }, {});
+        return Object.entries(countBy).sort(([, a], [, b]) => b - a).slice(0, sliceCount);
+    }
+
+    // --- 3. CHART & TABLE CREATION ---
+    function createOrUpdateDataTable(tableId, instanceKey, data, options) {
+        if ($.fn.DataTable.isDataTable(`#${tableId}`)) {
+            instances[instanceKey].clear().rows.add(data).draw();
+        } else {
+            instances[instanceKey] = $(`#${tableId}`).DataTable({ ...options, data });
+        }
+    }
+
+    function createOrUpdateChartJs(instanceKey, chartId, chartConfig) {
+        if (instances[instanceKey]) { instances[instanceKey].destroy(); }
+        instances[instanceKey] = new Chart(document.getElementById(chartId), chartConfig);
+    }
+    
+    function createOrUpdateBrazilMapChart(data) {
+        const processedData = groupAndSortData(data, 'Estado', 100);
+        const mapData = processedData.map(([stateName, count]) => {
+            const hcKey = stateNameToHcKey[stateName];
+            return hcKey ? [hcKey, count] : null;
+        }).filter(Boolean);
+        const colors = getThemeAwareColors();
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        instances.brazilMap = Highcharts.mapChart('map-container', {
+            chart: { map: 'countries/br/br-all', backgroundColor: isDark ? '#1e1e1e' : '#ffffff', borderRadius: 16 },
+            title: { text: null }, credits: { enabled: false },
+            mapNavigation: { enabled: true, buttonOptions: { verticalAlign: 'bottom' } },
+            colorAxis: { min: 0, minColor: colors.mapMinColor, maxColor: colors.mapMaxColor, labels: { style: { color: colors.textColor } } },
+            series: [{
+                data: mapData, name: 'Imobiliárias', states: { hover: { color: '#a48add' } },
+                dataLabels: {
+                    enabled: true, format: '{point.properties.postal-code}',
+                    color: '#000000',
+                    style: {
+                        textTransform: 'uppercase',
+                        // CORREÇÃO: Contorno preto aplicado para máxima legibilidade em ambos os temas
+                        textOutline: '1px white' 
+                    }
+                },
+                tooltip: { pointFormat: '{point.name}: <b>{point.value}</b>' },
+                events: {
+                    click: function (e) {
+                        const stateName = e.point.name;
+                        const stateFilter = document.getElementById('filter-state');
+                        stateFilter.value = (stateFilter.value === stateName) ? '' : stateName;
+                        applyFilters();
+                        stateFilter.classList.add('flash-highlight');
+                        setTimeout(() => stateFilter.classList.remove('flash-highlight'), 1000);
+                    }
+                }
+            }]
+        });
+    }
+
+    function createOrUpdateCityBarChart(data) {
+        const sortedData = groupAndSortData(data, 'Cidade', 10);
+        const colors = getThemeAwareColors();
+        createOrUpdateChartJs('cityBarChart', 'cityBarChart', {
+            type: 'bar',
+            data: { 
+                labels: sortedData.map(item => item[0]), 
+                datasets: [{ 
+                    label: 'Nº de Imobiliárias', data: sortedData.map(item => item[1]), 
+                    backgroundColor: 'rgba(0, 150, 136, 0.7)', borderColor: 'rgba(0, 150, 136, 1)',
+                    borderWidth: 1, borderRadius: 5
+                }]
+            },
+            options: { 
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { ticks: { color: colors.textColor }, grid: { display: false } },
+                    x: { beginAtZero: true, ticks: { precision: 0, color: colors.textColor }, grid: { color: colors.gridColor, borderDash: [4, 4] } }
+                }
+            }
+        });
+    }
+    
+    // --- 4. DOM MANIPULATION & EVENT LISTENERS ---
+    function updateKpiCards(data) {
+        const kpis = {
+            'kpi-total-imobiliarias': data.length,
+            'kpi-total-corretores': data.reduce((sum, item) => sum + (item['Quantidade de Corretores'] || 0), 0),
+            'kpi-imob-ativas': data.filter(item => item['Ativa em sistema'] === 'Ativo').length,
+            'kpi-contratos-assinados': data.filter(item => item['Contrato assinado'] === 'Assinado').length
+        };
+        kpis['kpi-imob-inativas'] = kpis['kpi-total-imobiliarias'] - kpis['kpi-imob-ativas'];
+        kpis['kpi-contratos-pendentes'] = kpis['kpi-total-imobiliarias'] - kpis['kpi-contratos-assinados'];
+        for (const [id, value] of Object.entries(kpis)) {
+            const element = document.getElementById(id);
+            if(element) animateValue(element, 0, value, 1500);
+        }
+    }
+
+    function populateFilters(data) {
+        const filters = {
+            'filter-state': 'Estado', 'filter-city': 'Cidade',
+            'filter-status-sistema': 'Ativa em sistema', 'filter-contrato': 'Contrato assinado'
+        };
+        for (const [filterId, columnName] of Object.entries(filters)) {
+            const select = document.getElementById(filterId);
+            if (select) {
+                const uniqueValues = [...new Set(data.map(item => item[columnName]).filter(Boolean))].sort((a, b) => String(a).localeCompare(b));
+                select.innerHTML = `<option value="">Todos</option>`;
+                uniqueValues.forEach(value => {
+                    select.innerHTML += `<option value="${value}">${value}</option>`;
+                });
+            }
+        }
+    }
+
+    function updateActiveFilterChips() {
+        const container = document.getElementById('active-filters-container');
+        if(!container) return;
+        container.innerHTML = '';
+        let hasActiveFilter = false;
+        const filterMapping = {
+            'filter-state': 'Estado', 'filter-city': 'Cidade',
+            'filter-status-sistema': 'Status Sistema', 'filter-contrato': 'Contrato'
+        };
+        for (const [id, label] of Object.entries(filterMapping)) {
+            const select = document.getElementById(id);
+            if (select && select.value) {
+                hasActiveFilter = true;
+                const chip = `<div class="filter-chip" data-filter-id="${id}">${label}: ${select.value}<button class="remove-chip"><span class="material-symbols-outlined">close</span></button></div>`;
+                container.innerHTML += chip;
+            }
+        }
+        document.getElementById('reset-filters').disabled = !hasActiveFilter;
+    }
+
+    function applyFilters() {
+        let filteredData = [...allData];
+        const filterValues = {
+            'Estado': document.getElementById('filter-state').value, 'Cidade': document.getElementById('filter-city').value,
+            'Ativa em sistema': document.getElementById('filter-status-sistema').value, 'Contrato assinado': document.getElementById('filter-contrato').value
+        };
+        for (const [column, value] of Object.entries(filterValues)) {
+            if (value) {
+                filteredData = filteredData.filter(item => String(item[column]) === String(value));
+            }
+        }
+        updateDashboard(filteredData);
+    }
+
+    function resetFilters() {
+        ['filter-state', 'filter-city', 'filter-status-sistema', 'filter-contrato'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        applyFilters();
+    }
+
+    function setupEventListeners() {
+        document.getElementById('reset-filters').addEventListener('click', resetFilters);
+        ['filter-state', 'filter-city', 'filter-status-sistema', 'filter-contrato'].forEach(id => {
+            document.getElementById(id).addEventListener('change', applyFilters);
+        });
+        document.getElementById('active-filters-container').addEventListener('click', (event) => {
+            const removeButton = event.target.closest('.remove-chip');
+            if (removeButton) {
+                const chip = removeButton.closest('.filter-chip');
+                document.getElementById(chip.dataset.filterId).value = '';
+                applyFilters();
+            }
+        });
+    }
+
+    // --- 5. MAIN LOGIC & INITIALIZATION ---
+    function updateDashboard(data) {
+        updateKpiCards(data);
+        createOrUpdateCityBarChart(data);
+        createOrUpdateBrazilMapChart(data);
+        const rankedData = [...data].filter(item => item['Quantidade de Corretores'] > 0).sort((a, b) => b['Quantidade de Corretores'] - a['Quantidade de Corretores']);
+        createOrUpdateDataTable('rankingTable', 'rankingTable', rankedData, {
+            columns: [{ data: 'Imobiliária', title: 'Imobiliária' }, { data: 'Quantidade de Corretores', title: 'Nº Corretores' }],
+            order: [[1, 'desc']], responsive: true, pageLength: 5, lengthChange: false, searching: false, info: false,
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' }
+        });
+        createOrUpdateDataTable('imobiliariasTable', 'mainTable', data, {
+            columns: [
+                { data: 'Imobiliária', title: 'Imobiliária' }, { data: 'Quantidade de Corretores', title: 'Qtd. Corretores' },
+                { data: 'Estado', title: 'Estado' }, { data: 'Cidade', title: 'Cidade' },
+                { data: 'Ativa em sistema', title: 'Status Sistema' }, { data: 'Contrato assinado', title: 'Contrato' }
+            ],
+            responsive: true, pageLength: 10,
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' },
+            dom: 'Bfrtip',
+            buttons: [
+                { extend: 'csv', text: 'Exportar para CSV', className: 'dt-button' },
+                { extend: 'excel', text: 'Exportar para Excel', className: 'dt-button' }
+            ]
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const skeleton = document.getElementById('skeleton-loader');
+        const content = document.getElementById('dashboard-content');
+        if(skeleton) skeleton.style.display = 'block';
+
+        try {
+            const response = await fetch('/api/data');
+            if (!response.ok) throw new Error(`Falha na API: ${response.statusText}`);
+            allData = await response.json();
+            
+            populateFilters(allData);
+            setupEventListeners();
+            applyFilters();
+            
+            if(skeleton) skeleton.style.display = 'none';
+            if(content) {
+                content.style.opacity = 0;
+                content.style.display = 'block';
+                setTimeout(() => {
+                    content.style.transition = 'opacity 0.5s ease-in-out';
+                    content.style.opacity = 1;
+                }, 50);
+            }
+
+        } catch (error) {
+            console.error("Erro CRÍTICO ao inicializar:", error);
+            if(skeleton) skeleton.innerHTML = `<p style="text-align:center;font-size:1.5em;padding:50px;color:var(--danger-color);">Erro ao carregar dados. Verifique o console.</p>`;
+        }
+
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            if (currentTheme === 'dark') themeToggle.checked = true;
+
+            themeToggle.addEventListener('change', () => {
+                const newTheme = themeToggle.checked ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                applyFilters();
+            });
+        }
+
+        const scrollElements = document.querySelectorAll('.animate-on-scroll');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, { threshold: 0.1 });
+        scrollElements.forEach(el => observer.observe(el));
+    });
+    </script>
+</body>
+</html>
