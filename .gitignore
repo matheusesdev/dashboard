@@ -1,0 +1,8 @@
+# .gitignore
+
+# Ignorar o arquivo de credenciais do Google
+credentials.json
+# Outras coisas comuns para ignorar em projetos Python
+__pycache__/
+*.pyc
+.env
