@@ -2,6 +2,7 @@
 
 # Ignorar o arquivo de credenciais do Google
 credentials.json
+testar_conexao.py
 # Outras coisas comuns para ignorar em projetos Python
 __pycache__/
 *.pyc

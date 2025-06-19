@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 SERVICE_ACCOUNT_FILE = 'credentials.json'
-SPREADSHEET_ID = '1WNi5B8ujhPTcGZgS5j7oMnnF4G_MxEEhO9ANhywLcpM'  # <-- SUBSTITUA PELO SEU ID REAL
+SPREADSHEET_ID = '1QFospGr7d3KDggAz-dtjbjGhZDVb-ZxANpw6pzr3lcU'  # <-- SUBSTITUA PELO SEU ID REAL
 # Lendo da coluna A até a F, que corresponde às 6 colunas da sua imagem
 RANGE_NAME = 'BaseDeDados!A:F'  # <-- AJUSTE O NOME DA ABA SE NECESSÁRIO
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
