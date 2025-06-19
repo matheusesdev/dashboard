@@ -1,9 +1,23 @@
-# .gitignore
-
-# Ignorar o arquivo de credenciais do Google
+# Arquivos de Segredos e Credenciais (MUITO IMPORTANTE)
+# Nunca envie suas chaves de API ou credenciais para o GitHub.
 credentials.json
-testar_conexao.py
 # Outras coisas comuns para ignorar em projetos Python
 __pycache__/
 *.pyc
-.env
+
+# Pasta de Ambiente Virtual (Boa prática)
+# Se você usa um ambiente virtual (venv, virtualenv), ele deve ser ignorado.
+venv/
+.venv/
+env/
+.env/
+
+# Arquivos gerados por Sistemas Operacionais
+# Arquivo de metadados do macOS
+.DS_Store
+# Arquivo de cache de miniaturas do Windows
+Thumbs.db
+
+# Arquivos de configuração de Editores de Código / IDEs
+.vscode/
+.idea/
